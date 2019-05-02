@@ -1,0 +1,1171 @@
+<!-- Jonas Marcondes Rabello - N01185060
+     Kashi Dookran - N01123649 -->
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<title>Assignment Board Game</title>
+<head>
+	<link rel="stylesheet" href="Game_152_Assignment_02.css">
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			
+			var canvas = $("#BoardGameCanvas");
+			var ctxBoard = canvas.get(0).getContext("2d");
+			
+			var livesCanvas = $("#LivesCanvas");
+			var ctxLives = livesCanvas.get(0).getContext("2d");
+		
+			var background = new Image();
+			background.src = "Images/background.jpg";
+			background.addEventListener("load", loadHandler, false);	
+			
+			var linetracev = new Image();
+			linetracev.src = "Images/linetracev.png";
+			
+			var linetraceh = new Image();
+			linetraceh.src = "Images/linetraceh.png";
+
+			var ringLives = new Image();
+			ringLives.src = "Images/ring.png";
+			
+			var goblinHealth = $("#globinHealth");									// Goblin bar health
+			var goblinhealtBar = document.getElementById("goblinCurrentHealth");
+			
+			var punch = new Audio("Sounds/punch.wav");
+			var goblindead = new Audio("Sounds/goblindead.wav");
+			var health = new Audio("Sounds/health.mp3");
+			var nazgulsound = new Audio("Sounds/nazgul.mp3");
+			var backsound = new Audio("Sounds/backsound.mp3");
+			var frodohit = new Audio("Sounds/frodohit.mp3");
+			var winner = new Audio("Sounds/winner.mp3");
+			var gameoversound = new Audio("Sounds/gameover.mp3");
+			backsound.volume = 0.2;													// Set initial volume
+			
+			var vg = document.getElementById("volGame");
+			vg.onchange = volGame; 
+
+			var goblinSetLife = true;
+			var gameOver = false;
+			
+			var grass = 0;
+			var goblin = 1;
+			var healer1 = 2;
+			var healer2 = 3;
+			var healer3 = 4;
+			var rivendell = 5;
+			var redgoblin = 6;
+			var hitgoblin = 7;
+			
+			goblinHealth.hide();
+			
+			var battleField = [[0, 1, 0, 0, 1, 0, 0, 0, 5],
+							   [0, 0, 0, 0, 0, 0, 0, 0, 0],  
+							   [0, 0, 1, 0, 4, 0, 1, 0, 0],
+							   [1, 0, 0, 0, 0, 0, 0, 0, 1],
+							   [0, 2, 0, 1, 0, 0, 1, 0, 0],
+							   [1, 0, 0, 0, 0, 0, 0, 0, 1],
+							   [0, 0, 1, 0, 1, 0, 0, 0, 0],
+							   [0, 0, 0, 0, 0, 0, 3, 1, 0],
+							   [0, 0, 0, 0, 1, 0, 0, 0, 0],
+							  ];
+			
+			var goblinTimeLife = [[0, 0, 0, 0, 0, 0, 0, 0, 0],		// Control of goblin life
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								];
+								
+			var goblinPlayTime = [[0, 0, 0, 0, 0, 0, 0, 0, 0],		// Control of hit goblin blinking
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+								];
+								
+			var lives = [[1],[1],[1],];		// Amount of Fodor's life
+			
+								  
+			var action = [[38],	// Up Arrow
+						  [87],	// W
+						  [40],	// Down Arrow
+						  [83],	// S
+						  [39],	// Rigth Arrow
+						  [68],	// D
+						  [37],	// Left Arrow
+						  [65],	// A
+						  [17],	// Ctrl
+						  [90],	// Z
+						 ];
+			
+			var gameOver = {							// To show the message game over
+				image: "Images/gameover.png",
+				numberofFrames: 4,
+				currentFrame: 0,
+				width: 597.2,
+				height: 85.2,
+				positionX: 0,
+				positionY: 0,
+				currentTimer: 0,
+				maxTimer: 30,
+				gameover: false,
+			};
+
+			var gameOverPlay = new Image();
+			gameOverPlay.src = gameOver.image;
+			
+			var winGame = {								// To show the message winner
+
+				image: "Images/wingame.png",
+				width: 397,
+				height: 157,
+				positionX: 0,
+				positionY: 0,
+				currentTimer: 0,
+				maxTimer: 40,							// Timer to change frame
+				display: true,
+			};
+
+			var winGamePlay = new Image();
+			winGamePlay.src = winGame.image;
+
+			var nazgulCatch = {							// To show the message Nazgul caught you
+
+                image: "Images/nazgulcaughtyou.png",
+                numberOfFrames: 4,
+                currentFrame: 0,
+                width: 1493,
+                height: 121,
+                positionX: 0,
+                positionY: 0,
+                currentTimer: 0,
+                maxTimer: 20,							// Timer to change frame
+				displayCurrentTimer: 0,
+                displayMaxTimer: 150,					// Time to show the message
+				display: false,
+            }
+			var nazgulCaughtYou = new Image();
+			nazgulCaughtYou.src = nazgulCatch.image;
+			
+			var nazgul = {								// Set Nazgul to go
+
+				image: "Images/nazgul.png",
+				speed: 1,
+				positionX: 4,
+				positionY: 4,
+				width: 145,
+				height: 205,
+				currentTimer: 0,
+				maxTimer: 50,							// Timer to change frame
+				moveX: false,
+				notfreeze: true,						// Control Nazgul movement
+			}
+
+			var nazgulPlay = new Image();
+			nazgulPlay.src = nazgul.image;
+		
+			var frodo = {			
+				image: "Images/frodo.png",
+				numberOfFrames: 4,			// The numbers of the animation frames and the starting frame
+				currentFrame: 0,			// Current frame to recover the image of the sprite
+				maxTimer: 7,				// Max timer to update currentFrame
+				transTimer: 0,				// To control update currentFrame
+				speed: 1.5,					// Speed
+				sourceX: 0,					// Position of begin image X
+				sourceY: 0,					// Position of begin image Y
+				width: 0,					// Real width
+				height: 0,					// Real height
+				widthS: 0,					// Width in scale
+				heightS:0,					// Height in scale
+				middleX: 0,				    // Position of the middle of the image X
+				middleY: 0,					// Position of the middle of the image Y
+				positionX: 0,				// Current position X (pixels)
+				positionY:0,				// Current position Y (pixels)				
+				stepPositionX: 0,			// Step position direction right or left
+				stepPositionY: 0,			// Step position direction up or down
+				currentX: 0,				// Current position on game board Line
+				currentY: 0,				// Current position on game board Colun
+				fight: false,				// Set mode fight
+				fightTime: 0,				// Set time idle before fighting
+				fightTimeMax: 8,            // Max time to start fighting if not Frodo gets hurt
+				hitTimer: 60,				// To control time scream hit Frodo
+				maxHitTimer: 60,			// To control time to start scream hit Frodo
+				fightPosition: " ",         // Set fight Up, Down, Left, Right
+				hurt: false,				// Control Frodo is hurt or not
+				play: true,  				// Control if play Frodo or not (blinking)
+				playTimer: 0,				// Control time to play Frodo when hurt  (blinking)
+				gofoward: true,				// Control if Frodo can go gofoward
+				whoLeft: 0,					// Who is in left side of Frodo
+				whoRight: 0,				// Who is in right side of Frodo
+				whoUp: 0,					// Who is in up side of Frodo
+				whoDown: 0,					// Who is in down side of Frodo
+				health: 100,				// Size of health bar
+				score: 0,					// Player`s score
+				finalscore: true,			// To update the last score points of Rivendell
+				stepX: 0,					// Direction of Frodo walking
+				stepY: 0,					// Direction of Frodo walking
+				lives: 3,                   // Amount of Fodor's life
+				
+				// Data of Frodo sprite Position X and Position Y on the image and Width and Height of the image
+				// Position X/Y and Size Width/Weight
+				up: [[406,331,52,85],		
+					 [487,331,54,85],
+					 [561,331,56,85],
+					 [639,331,56,85],
+					],
+				
+				down: [[402,12,58,98],
+					   [481,12,58,98],
+					   [559,12,58,98],
+				       [637,12,58,98],
+				      ],
+			
+				right: [[401,223,56,87],
+					    [474,223,64,87],
+					    [556,223,65,87],
+				        [638,223,54,87],
+				       ],
+					
+				left: [[406,117,56,88],
+					   [482,117,61,88],
+					   [562,117,55,88],
+				       [638,117,54,88],
+				      ],
+					  
+				upFight: [[27,331,52,85],		
+						  [108,331,54,85],
+						  [182,331,56,85],
+						  [260,331,56,85],
+						 ],
+				
+				downFight: [[23,12,58,98],
+							[102,12,58,98],
+							[180,12,58,98],
+							[258,12,58,98],
+						   ],
+			
+				rightFight: [[22,223,56,87],
+							 [95,223,76,87],
+							 [177,223,65,87],
+							 [259,223,74,87],
+							],
+					
+				leftFight: [[27,117,56,88],
+							[93,117,72,88],
+							[183,117,55,88],
+							[239,117,69,88],
+						   ],	
+			};
+			
+			var frodoPlay = new Image();
+			frodoPlay.src = frodo.image;		
+			
+			window.addEventListener("keydown", keydownHandler, false);	
+			window.addEventListener("keyup", keydupHandler, false);	
+
+			playAgainButton.addEventListener("click", clickHandler, false);
+			restartButton.addEventListener("click", clickHandler, false);
+			playAgainButton.style.display="none";
+			
+			resetFrodoPosition();			
+			
+			function clickHandler(){
+				location.reload();
+			}		
+						
+			function loadHandler() {
+				
+				updateAnimation();		// Start the animation
+				
+			}
+
+			function updateAnimation() {	 
+				
+				 setTimeout(updateAnimation, 16); 			// Set a timer to call updateAnimation every 500 millisec			 
+					
+				 render();									// Render the animation
+			}								
+			
+			function render() {	 
+			
+				ctxBoard.clearRect(0, 0, canvas.width(), canvas.height());   		// Clear the canvas of any previous frames					
+				ctxBoard.drawImage(background, 0, 0);		// Set background image		
+				setGrid();									// Set the background grid				
+				gridStart();				
+				checkLives();
+				displayRingLives();
+				drawNazgul();				
+				displayWinGame();
+				frodoMovePlay();
+				displayNazgulCaughtFrodo();
+				backsound.play();
+			}
+			
+			function keydownHandler(event) {			
+				if(!gameOver.gameover) {
+					if(event.keyCode == action[0] ||			// Up Arrow
+					   event.keyCode == action[1] ) {			// W							
+						if(!frodo.fight) {
+							frodoMoveUp();
+						}else {
+							frodo.fightPosition = "Up";
+						}					
+					}else if (event.keyCode == action[2] ||		// Down Arrow
+							  event.keyCode == action[3] ) {	// S
+						if(!frodo.fight) {
+							frodoMoveDown();
+						}else {
+							frodo.fightPosition = "Down";
+						}
+					}else if (event.keyCode == action[4] ||		// Rigth Arrow
+							  event.keyCode == action[5] ) {	// D
+						if(!frodo.fight) {
+							frodoMoveRight();
+						}else {
+							frodo.fightPosition = "Right";
+						}
+					}else if (event.keyCode == action[6] ||		// Left Arrow
+							  event.keyCode == action[7] ) {	// A
+						if(!frodo.fight) {
+							frodoMoveLeft();
+						}else {							
+							frodo.fightPosition = "Left";
+						}
+					}else if (event.keyCode == action[8] ||		// Ctrl
+							  event.keyCode == action[9] ) {	// Z							
+							frodo.fight = true;							
+					}
+				}
+			}
+			
+			function keydupHandler(event) {	
+				if (event.keyCode == action[8] ||	// Ctrl
+					event.keyCode == action[9] ) {	// Z
+						frodo.fight = false;
+						frodo.fightPosition = " ";
+						goblinHealth.hide();
+				}
+			}
+			
+			function frodoMoveUp() {			
+				
+				checkGoblinPosition("Up");
+				
+				if (frodo.gofoward) {
+				
+					if( (frodo.stepPositionY - 70 ) >= 0 && 	    // Check up border
+						 frodo.stepY == 0 && frodo.stepX == 0 )	{	// Check if Frodo is not in movement
+					
+						frodo.stepPositionY -= 70;
+						frodo.stepY = frodo.speed * -1;
+						frodo.stepX = 0;				
+					}
+				}
+			}
+			
+			function frodoMoveDown() {
+			
+				checkGoblinPosition("Down");
+				
+				if (frodo.gofoward) {
+		
+					if( (frodo.stepPositionY + 70 ) <= 630 &&   	// Check bottom border
+						 frodo.stepY == 0 && frodo.stepX == 0 ) {	// Check if Frodo is not in movement					
+						
+						frodo.stepPositionY += 70;
+						frodo.stepY = frodo.speed;
+						frodo.stepX = 0;
+					}
+				}
+			}
+
+			function frodoMoveRight() {
+				
+				checkGoblinPosition("Right");
+				
+				if (frodo.gofoward) {
+				
+					if( (frodo.stepPositionX + 70 ) <= 630 && 		// Check right border
+						 frodo.stepY == 0 && frodo.stepX == 0 )	{		        // Check if Frodo is not in movement
+						
+						frodo.stepPositionX += 70;
+						frodo.stepY = 0;
+						frodo.stepX = frodo.speed; 
+					}
+				}
+			}
+
+			function frodoMoveLeft() {
+				
+				checkGoblinPosition("Left");
+				
+				if (frodo.gofoward) {
+				
+					if( (frodo.stepPositionX - 70 ) >= 0 &&   		// Check left border
+						 frodo.stepY == 0 && frodo.stepX == 0 ) {		   	 	// Check if Frodo is not in movement
+						
+						frodo.stepPositionX -= 70;
+						frodo.stepY = 0;
+						frodo.stepX = frodo.speed *-1;
+					}
+				}
+			}
+
+			function frodoSetUp() {				
+				frodo.sourceX = frodo.up[frodo.currentFrame][0];
+				frodo.sourceY = frodo.up[frodo.currentFrame][1];			
+				frodo.width   = frodo.up[frodo.currentFrame][2];
+				frodo.height  = frodo.up[frodo.currentFrame][3];				
+			}
+			
+			function frodoSetDown() {				
+				frodo.sourceX = frodo.down[frodo.currentFrame][0];
+				frodo.sourceY = frodo.down[frodo.currentFrame][1];
+				frodo.width   = frodo.down[frodo.currentFrame][2];
+				frodo.height  = frodo.down[frodo.currentFrame][3];
+			}
+			
+			function frodoSetRight() {			
+				frodo.sourceX = frodo.right[frodo.currentFrame][0];
+				frodo.sourceY = frodo.right[frodo.currentFrame][1];
+				frodo.width   = frodo.right[frodo.currentFrame][2];
+				frodo.height  = frodo.right[frodo.currentFrame][3];
+			}
+			
+			function frodoSetLeft() {			
+				frodo.sourceX = frodo.left[frodo.currentFrame][0];
+				frodo.sourceY = frodo.left[frodo.currentFrame][1];
+				frodo.width   = frodo.left[frodo.currentFrame][2];
+				frodo.height  = frodo.left[frodo.currentFrame][3];			
+			}
+			
+			function frodoSetUpfFight() {				
+				frodo.sourceX = frodo.upFight[frodo.currentFrame][0];
+				frodo.sourceY = frodo.upFight[frodo.currentFrame][1];			
+				frodo.width   = frodo.upFight[frodo.currentFrame][2];
+				frodo.height  = frodo.upFight[frodo.currentFrame][3];				
+			}
+			
+			function frodoSetDownFight() {				
+				frodo.sourceX = frodo.downFight[frodo.currentFrame][0];
+				frodo.sourceY = frodo.downFight[frodo.currentFrame][1];
+				frodo.width   = frodo.downFight[frodo.currentFrame][2];
+				frodo.height  = frodo.downFight[frodo.currentFrame][3];
+			}
+			
+			function frodoSetRightFight() {			
+				frodo.sourceX = frodo.rightFight[frodo.currentFrame][0];
+				frodo.sourceY = frodo.rightFight[frodo.currentFrame][1];
+				frodo.width   = frodo.rightFight[frodo.currentFrame][2];
+				frodo.height  = frodo.rightFight[frodo.currentFrame][3];
+			}
+			
+			function frodoSetLeftFight() {			
+				frodo.sourceX = frodo.leftFight[frodo.currentFrame][0];
+				frodo.sourceY = frodo.leftFight[frodo.currentFrame][1];
+				frodo.width   = frodo.leftFight[frodo.currentFrame][2];
+				frodo.height  = frodo.leftFight[frodo.currentFrame][3];			
+			}		
+			
+			function frodoMovePlay() {
+					
+				if(frodo.stepX == 0 && frodo.stepY < 0) {				// Up
+					frodoSetUp();
+				}else if (frodo.stepX == 0 && frodo.stepY > 0) {		// Down
+					frodoSetDown();
+				}else if (frodo.stepX > 0 && frodo.stepY == 0) {		// Right
+					frodoSetRight();
+				}else if (frodo.stepX < 0 && frodo.stepY == 0) {		// Left
+					frodoSetLeft();
+				}else if (frodo.fightPosition == "Up") {
+					frodoSetUpfFight();
+				}else if (frodo.fightPosition == "Down") {
+					frodoSetDownFight();
+				}else if (frodo.fightPosition == "Right") {
+					frodoSetRightFight();
+				}else if (frodo.fightPosition == "Left") {
+					frodoSetLeftFight();
+				}
+				
+				if(frodo.stepX != 0) {
+					frodo.positionX = frodo.positionX + frodo.stepX;
+				}
+				
+				if(frodo.stepY != 0) {
+					frodo.positionY = frodo.positionY + frodo.stepY;
+				}
+								
+				frodo.widthS = frodo.width*0.6;		// Set image in scale mode
+				frodo.heightS = frodo.height*0.6;	// Set image in scale mode	
+
+				frodo.middleX = frodo.widthS / 2;
+				frodo.middleY = frodo.heightS / 2;
+				
+				drawFrodo();				
+			}
+			
+			function drawFrodo() {
+				
+				// Step control one cell each time
+				if ( (frodo.stepX == 0 && frodo.stepY < 0 && frodo.positionY+frodo.middleY < frodo.stepPositionY) ||			// Up
+					 (frodo.stepX == 0 && frodo.stepY > 0 && frodo.positionY+frodo.middleY > frodo.stepPositionY) ) {	    	// Down					
+					if(frodo.stepX == 0 && frodo.stepY < 0) {				// Update position Up
+						frodo.currentX --;
+					}else if (frodo.stepX == 0 && frodo.stepY > 0) {		// Update position Down
+						frodo.currentX ++;
+					}
+					frodo.stepY = 0;																						// Stop walking
+				}
+				else if ( (frodo.stepX > 0 && frodo.stepY == 0 && frodo.positionX+frodo.middleX > frodo.stepPositionX) ||	 	// Right
+						   (frodo.stepX < 0 && frodo.stepY == 0 && frodo.positionX+frodo.middleX < frodo.stepPositionX) ) {	    // Left
+					if (frodo.stepX < 0 && frodo.stepY == 0) {				// Update position Left
+						frodo.currentY --;
+					}else if (frodo.stepX > 0 && frodo.stepY == 0) {		// Update position Right
+						frodo.currentY ++;
+					}
+					frodo.stepX = 0;																						// Stop walking
+				}
+				
+				whoIsTheSamePlace();	 // Cheque who is in the same place of Frodo			
+			
+				checkNeighbourhood();	 // Who is in neighbourhood of Frodo	
+				
+				checkFrodoHurt();		 // Check if Frodo is hurt
+				
+				if(frodo.play) {
+					ctxBoard.drawImage (											   // Draw Frodo sprite
+					frodoPlay,		
+					frodo.sourceX, frodo.sourceY, frodo.width, frodo.height,
+					frodo.positionX-frodo.middleX, frodo.positionY-frodo.middleY,  // Move Frodo by his center
+					frodo.widthS, frodo.heightS);								   // Draw Frodo in scale
+				}
+				
+				// Control next frame
+				if ((frodo.stepX != 0 || frodo.stepY != 0 || frodo.fight) && !nazgulCatch.display) {
+					updateFrodoFrame();	
+				}				
+			}
+			
+			function updateFrodoFrame() {	
+				
+				frodo.transTimer += 1;
+			
+				if(frodo.transTimer >= frodo.maxTimer) {
+					frodo.currentFrame += 1;
+					frodo.transTimer = 0;
+				}
+				
+				if(frodo.currentFrame >= frodo.numberOfFrames) {
+					frodo.currentFrame = 0;
+				}
+				
+			}			
+
+			function checkFrodoHurt() {
+			
+				if(frodo.hurt) {			// Make Frodo blinks when hurt
+				
+					frodoHealthBar(-0.1);
+					
+					frodo.hitTimer++;
+					
+					if(frodo.hitTimer >= frodo.maxHitTimer) {
+						frodohit.play();
+						frodo.hitTimer = 0;
+					}
+					
+					frodo.playTimer += 1;
+					
+					if(frodo.playTimer >= 10) {
+					
+						frodo.playTimer = 0;
+						
+						if(frodo.play) {
+							frodo.play = false;
+						} else {
+							frodo.play = true;
+						}
+					}				
+				}
+			}	
+	
+			function checkNeighbourhood() {				
+					
+				if(frodo.currentY-1 >= 0) {  						// Left
+					frodo.whoLeft = battleField[frodo.currentX][frodo.currentY-1];
+					whoisthere(frodo.currentX, frodo.currentY-1);
+				}
+				if(frodo.currentY+1 < 9) {							// Right
+					frodo.whoRight = battleField[frodo.currentX][frodo.currentY+1];
+					whoisthere(frodo.currentX,frodo.currentY+1);
+				}
+				if(frodo.currentX-1 >= 0) {							// Up
+					frodo.whoUp = battleField[frodo.currentX-1][frodo.currentY];
+					whoisthere(frodo.currentX-1,frodo.currentY);
+				}
+				if(frodo.currentX+1 < 9) {							// Down
+					frodo.whoDown = battleField[frodo.currentX+1][frodo.currentY];
+					whoisthere(frodo.currentX+1,frodo.currentY);
+				}
+				
+				// If Frodo is fighting at opposite side of the goblin
+				if (frodo.fightPosition != " ") {
+				
+					if(frodo.fightPosition != "Right" && frodo.whoRight == redgoblin) {
+						frodo.hurt = true;
+					} else if(frodo.fightPosition != "Left" && frodo.whoLeft == redgoblin) {
+						frodo.hurt = true;
+					} else if(frodo.fightPosition != "Up" && frodo.whoUp == redgoblin) {					
+						frodo.hurt = true;					
+					} else if(frodo.fightPosition != "Down" && frodo.whoDown == redgoblin) {
+						frodo.hurt = true;					
+					} else {
+						setFrodoNotHurt();
+					}
+					
+				} else if(frodo.whoLeft != goblin && frodo.whoRight != goblin && 
+						  frodo.whoUp != goblin && frodo.whoDown != goblin    &&
+						  frodo.whoLeft != redgoblin && frodo.whoRight != redgoblin && 
+						  frodo.whoUp != redgoblin && frodo.whoDown != redgoblin) {
+					setFrodoNotHurt();
+					goblinHealth.hide();
+				}				
+			}
+			
+			function whoisthere(x, y) {
+					
+				var who = battleField[x][y];
+				
+				switch(who){
+					case goblin:					
+						battleField[x][y] = redgoblin;
+						break;
+					case redgoblin:						
+						goblinHealth.show();
+						goblinhealtBar.style.width = goblinTimeLife[x][y] + "%";
+						if(!frodo.fight) {
+							frodo.fightTime += 0.1;			// Start the counter
+						}						
+						if (frodo.fightTime >= frodo.fightTimeMax) {
+							frodo.hurt = true;
+						}
+				}
+				
+				// If Frodo changes the direction of fighting
+				if(frodo.fightPosition != "Right" && frodo.whoRight == hitgoblin) {
+					battleField[x][y] = redgoblin;
+				} else if(frodo.fightPosition != "Left" && frodo.whoLeft == hitgoblin) {
+					battleField[x][y] = redgoblin;
+				} else if(frodo.fightPosition != "Up" && frodo.whoUp == hitgoblin) {					
+					battleField[x][y] = redgoblin;					
+				} else if(frodo.fightPosition != "Down" && frodo.whoDown == hitgoblin) {
+					battleField[x][y] = redgoblin;					
+				}	
+			}			
+			
+			function whoIsTheSamePlace() {				
+			
+				if(battleField[frodo.currentX][frodo.currentY] == healer1 || 
+				   battleField[frodo.currentX][frodo.currentY] == healer2 || 
+				   battleField[frodo.currentX][frodo.currentY] == healer3) {					
+					frodoHealthBar(100);		// Retrieve 100% of health
+					updateScore(100);			// Plus 100 points on score
+					health.play();
+					battleField[frodo.currentX][frodo.currentY] = grass;  // Disappear the healer
+				} else if (frodo.currentX == nazgul.positionX && frodo.currentY == nazgul.positionY) {
+					nazgulCatch.display = true;
+					nazgulsound.play();
+					frodoHealthBar(-100);				// Lost one life				
+					nazgul.positionX = 4;				// reset Nazgul position
+					nazgul.positionY = 4;				// reset Nazgul position
+				}		
+			}			
+			
+			function setFrodoNotHurt() {
+				frodo.hurt = false;
+				frodo.play = true;
+				frodo.fightTime = 0;			
+			}
+
+			function checkGoblinPosition(direction) {
+				
+				frodo.gofoward = true;
+				
+				// Check down
+				if(direction == "Down") {
+					if(frodo.currentX+1 < 9 && ((battleField[frodo.currentX+1][frodo.currentY] == goblin) ||
+												(battleField[frodo.currentX+1][frodo.currentY] == redgoblin))) {
+						frodo.gofoward = false;
+					}
+				}
+				
+				// Check up
+				if(direction == "Up") {
+					if(frodo.currentX-1 >= 0 && ((battleField[frodo.currentX-1][frodo.currentY] == goblin) ||
+												 (battleField[frodo.currentX-1][frodo.currentY] == redgoblin))) {
+						frodo.gofoward = false;												  
+					}
+				}
+
+				// Check right
+				if(direction == "Right") {
+					if(frodo.currentY+1 < 9 && ((battleField[frodo.currentX][frodo.currentY+1] == goblin) ||
+											    (battleField[frodo.currentX][frodo.currentY+1] == redgoblin))) {
+						frodo.gofoward = false;												  
+					}
+				}
+				
+				// Check left
+				if(direction == "Left") {
+					if(frodo.currentY-1 >= 0 && ((battleField[frodo.currentX][frodo.currentY-1] == goblin) ||
+												 (battleField[frodo.currentX][frodo.currentY-1] == redgoblin))) {
+						frodo.gofoward = false;												  
+					}
+				}
+			}
+			
+			function checkFrodoAround(i, j) {
+				
+				var frodoAround = false;
+				
+				if (battleField[i][j] == goblin || battleField[i][j] == redgoblin ||  battleField[i][j] == hitgoblin ) {
+					
+					if( (i+1) < 9 && frodo.currentX == (i+1) && frodo.currentY == j )	{  // Check Frodo Down side
+						
+						frodoAround = true;
+						
+						if(frodo.fightPosition == "Up") {							
+							frodoFighting(i, j);			
+						}
+					}
+					if ( (i-1) >= 0 && frodo.currentX == (i-1) && frodo.currentY == j ) {	// Check Frodo Up side
+						
+						frodoAround = true;
+						
+						if(frodo.fightPosition == "Down") {							
+							frodoFighting(i, j);			
+						}
+					}
+					if ( (j+1) < 9 && frodo.currentY == (j+1) && frodo.currentX == i ) {	// Check Frodo Right side
+						
+						frodoAround = true;
+						
+						if(frodo.fightPosition == "Left") {							
+							frodoFighting(i, j);			
+						}
+					}
+					if ( (j-1) >= 0 && frodo.currentY == (j-1) && frodo.currentX == i )	{	// Check Frodo Left side					
+						
+						frodoAround = true;
+						
+						if(frodo.fightPosition == "Right") {							
+							frodoFighting(i, j);		
+						}
+					}
+					
+					if(goblinTimeLife[i][j] > 0) {
+						if(!frodo.fight) {
+							if(frodoAround) {						
+								battleField[i][j] = redgoblin;
+							} else {
+								battleField[i][j] = goblin;
+							}
+						}						
+					} else {
+						battleField[i][j] = grass;
+					}
+				}
+			}
+			
+			function frodoFighting(i, j) {			
+			
+				if (goblinTimeLife[i][j] > 0) {	
+				
+					goblinPlayTime[i][j] += 1;   				// Counter to make the gobling blink	
+
+				    punch.play();
+				
+					if(goblinPlayTime[i][j] >= 8) {
+						
+						goblinPlayTime[i][j] = 0;
+						goblinTimeLife[i][j] -= 5;				// Take a bit of his life		
+						
+						if(goblinTimeLife[i][j] <= 10) {						
+							goblindead.play();
+						}
+						
+						if(battleField[i][j] == hitgoblin) {
+							battleField[i][j] = goblin;
+						} else { 
+							battleField[i][j] = hitgoblin;
+						}
+					}					
+				}
+				
+				goblinhealtBar.style.width = goblinTimeLife[i][j] + "%";  	// Update goblin's health bar
+				
+				if(goblinTimeLife[i][j] <= 0) {
+					updateScore(50);  // Plus 50 points on score					
+				}
+			}
+
+			function resetFrodoPosition() {			
+				frodo.positionX = 35;			// Current position X (pixels)
+				frodo.positionY = 595;			// Current position Y (pixels)				
+				frodo.stepPositionX = 55;		// Step position direction right or left
+				frodo.stepPositionY = 625;		// Step position direction up or down
+				frodo.currentX = 8;				// Current position on game board Line
+				frodo.currentY = 0;				// Current position on game board Colunm
+				frodo.currentFrame = 0;			// Current frame to recover the image of the sprite
+				frodo.stepX = 0;				// Direction of Frodo walking					
+				frodo.stepY = 0;				// Direction of Frodo walking
+				frodoSetRight();				// Set position Frodo to right
+				setFrodoNotHurt();				
+			}
+			
+			function updateScore(points){
+				frodo.score += points;
+				document.getElementById("score").innerHTML="Score: " + frodo.score + "/1200";	// 1200 total score	
+			}
+			
+			function volGame(){
+
+				volgerstr = document.getElementById("volGame").value;
+				volgermax = document.getElementById("volGame").max;
+				volgerfloat = parseFloat(volgerstr);	
+				backsound.volume = volgerfloat/volgermax;	// change volume
+				vg.blur();									// remove focus after changing the volume
+			}
+			
+			function displayRingLives() {
+				
+				ctxLives.clearRect(0, 0, 300, 50);   // Clear the canvas			
+				
+				for (var i = 0; i < 3; i++){
+					if(lives[i] == 1) {					
+						ctxLives.drawImage(ringLives, 0, 0, 35, 50, 50*i, 0, 35, 50);
+					}
+				}	
+			}
+			
+			function setGrid() {							  // Set the background grid	
+				ctxBoard.drawImage(linetracev, 0, 0);          
+                ctxBoard.drawImage(linetracev, 70, 0);         
+                ctxBoard.drawImage(linetracev, 140, 0);        
+                ctxBoard.drawImage(linetracev, 210, 0);        
+                ctxBoard.drawImage(linetracev, 280, 0);        
+                ctxBoard.drawImage(linetracev, 350, 0);        
+                ctxBoard.drawImage(linetracev, 420, 0);        
+                ctxBoard.drawImage(linetracev, 490, 0);        
+                ctxBoard.drawImage(linetracev, 560, 0);        
+                ctxBoard.drawImage(linetracev, 630, 0);        
+                ctxBoard.drawImage(linetraceh, 0, 0);          
+                ctxBoard.drawImage(linetraceh, 0, 70);         
+                ctxBoard.drawImage(linetraceh, 0, 140);        
+                ctxBoard.drawImage(linetraceh, 0, 210);        
+                ctxBoard.drawImage(linetraceh, 0, 280);        
+                ctxBoard.drawImage(linetraceh, 0, 350);        
+                ctxBoard.drawImage(linetraceh, 0, 420);        
+                ctxBoard.drawImage(linetraceh, 0, 490);        
+                ctxBoard.drawImage(linetraceh, 0, 560);        
+                ctxBoard.drawImage(linetraceh, 0, 630);        				
+			}
+			
+			function drawNazgul(){
+				
+				ctxBoard.drawImage(nazgulPlay, 0, 0, nazgul.width, nazgul.height, nazgul.positionY * 70, nazgul.positionX * 70, 
+				                  nazgul.width * 0.4552, nazgul.height *.3219);
+								  
+				if(nazgul.notfreeze) {
+
+					nazgul.currentTimer++;
+				
+					if(nazgul.currentTimer >= nazgul.maxTimer){
+					
+						nazgul.currentTimer = 0;
+					
+						var x = Math.floor((Math.random()*100)+1);					
+
+						if (nazgul.moveX == false){
+							nazgul.moveX = true;
+
+							if (x % 2 == 0){
+								nazgul.positionX++;
+							} else {
+								nazgul.positionX--;
+							}
+						} else if (nazgul.moveX == true){
+							nazgul.moveX = false;
+							if (x % 2 == 0){
+								nazgul.positionY++;
+							} else {
+								nazgul.positionY--;
+							}
+						}				
+
+						if(nazgul.positionX > 8){
+							nazgul.positionX -= 2;
+						}
+
+						if(nazgul.positionX < 0){
+							nazgul.positionX += 2;
+						}
+
+						if(nazgul.positionY > 8){
+							nazgul.positionY -= 2;
+						}
+
+						if(nazgul.positionY < 0){
+							nazgul.positionY += 2;
+						}
+					}
+				}				
+			}		
+			
+			function Spawn(npc, i, j){
+				var npcData = [[0, 0, 0, 0, 0], 					// grass
+							   [63, 58, 1.0476, 1.1379, 0],			// goblin
+							   [146, 268, 0.28627, 0.24627, 15],	// healer 1
+							   [145, 293, 0.26526, 0.22526, 14],  	// healer 2
+							   [146, 303, 0.25782, 0.21782, 14],  	// healer 3
+							   [361, 359, 0.1833, 0.1833, 0],  		// rivendell
+							   [63, 58, 1.0476, 1.1379, 0],			// red goblin
+							  ];
+				//npcData[0] = swidth
+				//npcData[1] = sheight
+				//npcData[2] = width scale
+				//npcData[3] = height scale
+				//npcData[4] = left padding of image			
+				
+				var npcPosx = j * 70 + 4;
+				var npcPosy = i * 70 + 4;
+				var npcImage = new Image();
+				
+				switch(npc){
+					case goblin: 
+						npcImage.src = "Images/goblinhidden.png";
+						break;
+					case healer1:
+						npcImage.src = "Images/healer1.png";						
+						break;
+					case healer2:
+						npcImage.src = "Images/healer2.png";
+						break;
+					case healer3:
+						npcImage.src = "Images/healer3.png";
+						break;
+					case rivendell:
+						npcImage.src = "Images/rivendell.png";
+						break;
+					case redgoblin:
+						npcImage.src = "Images/redgoblin.png";
+						break;
+				}
+				
+				ctxBoard.drawImage(npcImage, 0, 0, npcData[npc][0], npcData[npc][1], npcPosx+npcData[npc][4], npcPosy, 
+								   npcData[npc][0] * npcData[npc][2], npcData[npc][1] * npcData[npc][3]);
+			}			
+			
+			function gridStart(){				
+
+				for (var i = 0; i < 9; i++){
+					for (var j = 0; j < 9; j++){
+							if(goblinSetLife && battleField[i][j] == goblin) { 
+								goblinTimeLife[i][j] = 100;		// Start the life of globin
+							}					
+							checkFrodoAround(i, j); // Check if Frodo is around of the orcs to change them in case
+							if(battleField[i][j] != 0 &&    // grass not spawn
+							   battleField[i][j] != 7) {    // hit globin not spawn
+								Spawn(battleField[i][j], i, j);
+							}
+					}
+				}
+				
+				goblinSetLife = false;
+			}
+			
+			function frodoHealthBar(effect) {
+				
+				if(!gameOver.gameover) {
+			
+					var healtBar = document.getElementById("frodoCurrentHealth");   
+					
+					if(effect != 100) {
+						frodo.health += effect;
+					} else {
+						frodo.health = effect;
+					}
+					
+					healtBar.style.width = frodo.health + '%';			// Update health bar
+
+					if (frodo.health <= 0){
+						frodo.lives--;
+						lives[frodo.lives] = 0;							// update array of lives
+						resetFrodoPosition();
+						frodo.health = 100;
+						healtBar.style.width = frodo.health + '%';		// Update health bar
+					}
+				}
+		    }
+
+		    function checkLives(){
+				
+				var healtBar = document.getElementById("frodoCurrentHealth");
+				
+		    	if (frodo.lives == 0 && !nazgulCatch.display){
+				
+					gameoversound.play();
+					
+					gameOver.gameover = true;
+					
+					frodo.health = 0;
+					healtBar.style.width = frodo.health + '%';		// Update health bar		
+					
+					// Display game Over					
+					gameOver.positionX = gameOver.currentFrame * gameOver.width;
+					
+					ctxBoard.drawImage(gameOverPlay, gameOver.positionX, gameOver.positionY, gameOver.width, gameOver.height, 18, 285, 
+									  gameOver.width, gameOver.height);					
+
+					gameOver.currentTimer++;
+					
+					if (gameOver.currentTimer == gameOver.maxTimer) {
+					
+						gameOver.currentTimer = 0;
+						gameOver.currentFrame += 1;
+
+						if (gameOver.currentFrame > 3){
+							gameOver.currentFrame = 0;
+						}
+					}
+			   }
+		    }
+
+		    function displayWinGame(){
+
+		    	if (frodo.currentX == 0 && frodo.currentY == 8){
+		    		
+					winner.play();
+					
+					gameOver.gameover = true;
+					
+					playAgainButton.style.display="block";
+					
+					restartButton.style.display="none";
+					
+					if(frodo.finalscore) {
+						frodo.finalscore = false;
+						updateScore(200);  // Plus 200 points on score
+					}
+		    		
+					if (winGame.display){
+						ctxBoard.drawImage(winGamePlay, winGame.positionX, winGame.positionY, winGame.width, winGame.height, -4, 180, 
+						                  winGame.width * 2, winGame.height * 2);
+					}
+					
+					winGame.currentTimer++;
+
+		    		if (winGame.currentTimer >= winGame.maxTimer){
+		    			winGame.currentTimer = 0;	
+
+		    			if (winGame.display){
+		    				winGame.display = false;
+		    			} else {
+		    				winGame.display = true;
+		    			}
+		    		}
+		    	}
+		    }
+
+			function displayNazgulCaughtFrodo() {
+			
+				if (nazgulCatch.display){
+				
+					gameOver.gameover = true;		// Freeze Frodo
+					nazgul.notfreeze = false;		// Freeze Nazgul
+
+					nazgulCatch.positionX = nazgulCatch.currentFrame * nazgulCatch.width;
+					
+					ctxBoard.drawImage(nazgulCaughtYou, nazgulCatch.positionX, nazgulCatch.positionY, nazgulCatch.width, nazgulCatch.height, 18, 285, 
+									  nazgulCatch.width * 0.4, nazgulCatch.height * 0.4);
+					
+					nazgulCatch.currentTimer ++;
+					if(nazgulCatch.currentTimer >= nazgulCatch.maxTimer) {
+						nazgulCatch.currentTimer = 0;
+						nazgulCatch.currentFrame += 1;
+						if (nazgulCatch.currentFrame > 3){
+							nazgulCatch.currentFrame = 0;
+						}
+					}				
+				
+					nazgulCatch.displayCurrentTimer ++;					
+					if(nazgulCatch.displayCurrentTimer >= nazgulCatch.displayMaxTimer) {
+						nazgulCatch.displayCurrentTimer = 0;
+						nazgulCatch.display = false;		// Stop display of the message
+						gameOver.gameover = false;		    // Release Frodo
+						nazgul.notfreeze = true;			// Release Nazgul						
+					}
+				}
+			}		
+	});
+	</script>
+</head>
+<body>
+	<div id="sideA">	
+		<canvas id="BoardGameCanvas" height="634" width="634">
+	</div>
+	<div id="sideB">
+		<div id="frodoHealth">
+			<div id="frodoCurrentHealth"><h1>Health</h1></div>
+		</div>
+		<div>
+			<div><h1>Lives &nbsp; &nbsp;<canvas id="LivesCanvas" height="50" width="300"></h1></div>			
+		</div>			
+		<h1 id="score" >Score: 0/1200</h1>
+		<input type="range" id="volGame" name="volGame" min="0" max="1000" value="200"></input><b> Background sound volume</b><br>
+		<div id="playAgain">
+			<button id="playAgainButton" class="playAgain">Play Again!</button>
+			<button id="restartButton" class="playAgain">Restart!</button>
+		</div>
+		<br>
+		<table>
+			<tr>
+				<td style="height:40px; width:100%;">
+					<div id="globinHealth">			
+						<div id="goblinCurrentHealth">Goblin health</div>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<p>Get to Rivendell without dying or being caught by Nazgul!<br><br>
+		   Score points by killing goblins or landing on the healers!<br><br>
+		   Controls: Move with W, A, S, D or Up, Left, Down, Right Arrow!<br><br>
+		   Use CTRL to toggle attack mode and use the movement keys to face the direction you want to attack. Use CTRL again to toggle attack mode off.<br><br>
+		   Goblins are worth: 50 points<br>
+		   Healers are worth: 100 points<br>
+		   Getting to rivendell gives: 200 points<br>
+		</p>
+		<br>
+	</div>
+</body>
+</html>
+
+<!-- drawImage							   -->
+<!-- img	Specifies the image, canvas, or video element to use	  -->
+<!-- sx	Optional. The x coordinate where to start clipping -->
+<!-- sy	Optional. The y coordinate where to start clipping -->
+<!-- swidth	Optional. The width of the clipped image -->
+<!-- sheight	Optional. The height of the clipped image -->
+<!-- x	The x coordinate where to place the image on the canvas -->
+<!-- y	The y coordinate where to place the image on the canvas -->
+<!-- width	Optional. The width of the image to use (stretch or reduce the image) -->
+<!-- height	Optional. The height of the image to use (stretch or reduce the image) -->
